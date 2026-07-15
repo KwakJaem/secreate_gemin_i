@@ -385,11 +385,18 @@ p.sub{font-size:13px;color:var(--mut-ink);margin-bottom:12px}
 .carrier-grid button.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
 .grade-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .grade-row button{
-  flex:1;min-width:72px;border:1.5px solid var(--line);background:#fff;
-  border-radius:10px;padding:10px 8px;font-size:13px;font-weight:600;color:var(--mut-ink);
+  flex:1 1 calc(33.33% - 8px);min-width:88px;border:1.5px solid var(--line);background:#fff;
+  border-radius:10px;padding:10px 8px;font-size:12.5px;font-weight:600;color:var(--mut-ink);
 }
 .grade-row button.on{border-color:var(--blue);background:var(--blue);color:#fff}
+.grade-hint{padding:10px 0 4px}
 #saveCarrierBtn:disabled{opacity:.45;cursor:not-allowed}
+
+.card-search{margin-bottom:14px}
+.card-search input{
+  width:100%;border:1.5px solid var(--line);border-radius:11px;padding:12px 14px;background:#fff;
+}
+.card-search input:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
 
 /* ---- CTA ---- */
 .cta{

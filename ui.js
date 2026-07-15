@@ -11,7 +11,11 @@ const SPEND_OPTS = [
   [400000,'40만원대'],[500000,'50만원대'],[700000,'70만원대'],[1000000,'100만원 이상']
 ];
 const CARRIERS = ['SKT', 'KT', 'LGU+'];
-const GRADES = ['일반', '실버', '골드', 'VIP'];
+const CARRIER_GRADES = {
+  SKT: ['SILVER', 'GOLD', 'VIP'],
+  KT: ['일반', 'WHITE', 'SILVER', 'GOLD', 'VIP', 'VVIP'],
+  'LGU+': ['우수', 'VIP', 'VVIP'],
+};
 
 const S = {
   page: 'home',
@@ -21,6 +25,7 @@ const S = {
   user: { loggedIn: false, name: '', email: '' },
   carrier: null,
   grade: null,
+  cardSearch: '',
   addPanel: null, // null | 'menu' | 'carrier' | 'card'
   q: {
     brand: '', category: null, amount: 10000,
@@ -185,10 +190,11 @@ function viewMyCards() {
   const cards = DB.products.filter(p => S.wallet.includes(p.product_id));
   const cardTiles = cards.map(ownedCardTile).join('');
 
+  const carrierLabel = S.carrier === 'LGU+' ? 'LG U+' : S.carrier;
   const carrierTile = S.carrier ? `
     <article class="owned-tile carrier-tile">
       <div class="owned-top">
-        <span class="carrier-badge">${esc(S.carrier)}</span>
+        <span class="carrier-badge">${esc(carrierLabel)}</span>
         <button type="button" class="icon-x" data-remove-carrier aria-label="통신사 삭제">✕</button>
       </div>
       <div class="owned-name">통신사</div>
@@ -282,39 +288,38 @@ function fabAndPanel() {
 
   let panelBody = '';
   if (open === 'carrier') {
+    const grades = S.carrier ? (CARRIER_GRADES[S.carrier] || []) : [];
+    const canSave = S.carrier && S.grade && grades.includes(S.grade);
     panelBody = `
       <div class="add-panel-head">
         <button type="button" class="back-btn" data-open-add="menu">←</button>
         <h3>통신사 추가</h3>
         <button type="button" class="icon-x" data-close-add aria-label="닫기">✕</button>
       </div>
-      <p class="sub">이용 중인 통신사와 멤버십 등급을 선택하세요.</p>
+      <p class="sub">이용 중인 통신사를 고른 뒤, 해당 통신사 멤버십 등급을 선택하세요.</p>
+      <label class="fl">통신사</label>
       <div class="carrier-grid">
-        ${CARRIERS.map(c => `<button type="button" data-carrier="${c}" class="${S.carrier === c ? 'on' : ''}">${c}</button>`).join('')}
+        ${CARRIERS.map(c => `<button type="button" data-carrier="${c}" class="${S.carrier === c ? 'on' : ''}">${c === 'LGU+' ? 'LG U+' : c}</button>`).join('')}
       </div>
-      <label class="fl">멤버십 등급</label>
-      <div class="grade-row">
-        ${GRADES.map(g => `<button type="button" data-grade="${g}" class="${S.grade === g ? 'on' : ''}">${g}</button>`).join('')}
-      </div>
-      <button type="button" class="cta block" id="saveCarrierBtn" ${S.carrier ? '' : 'disabled'}>저장</button>`;
+      ${S.carrier ? `
+        <label class="fl">${S.carrier === 'LGU+' ? 'LG U+' : S.carrier} 멤버십 등급</label>
+        <div class="grade-row">
+          ${grades.map(g => `<button type="button" data-grade="${esc(g)}" class="${S.grade === g ? 'on' : ''}">${esc(g)}</button>`).join('')}
+        </div>` : `
+        <p class="sub grade-hint">통신사를 먼저 선택하면 등급 목록이 나타납니다.</p>`}
+      <button type="button" class="cta block" id="saveCarrierBtn" ${canSave ? '' : 'disabled'}>저장</button>`;
   } else if (open === 'card') {
-    const available = DB.products.filter(p => !S.wallet.includes(p.product_id));
     panelBody = `
       <div class="add-panel-head">
         <button type="button" class="back-btn" data-open-add="menu">←</button>
         <h3>카드 추가</h3>
         <button type="button" class="icon-x" data-close-add aria-label="닫기">✕</button>
       </div>
-      <p class="sub">지갑에 넣을 결제수단을 선택하세요.</p>
-      ${available.length ? available.map(p => `
-        <button type="button" class="add-card-row" data-add-card="${p.product_id}">
-          <span class="plate" style="background:${PLATE_COLORS[p.product_id]}">${PLATE_LABEL[p.product_id]}</span>
-          <span class="info">
-            <span class="nm">${esc(p.product_name)}</span>
-            <span class="tp">${esc(p.product_type)} · ${esc(p.provider)}</span>
-          </span>
-          <span class="plus-mini">+</span>
-        </button>`).join('') : '<p class="sub">추가할 수 있는 카드가 모두 등록되어 있어요.</p>'}`;
+      <p class="sub">이름·카드사로 검색한 뒤 지갑에 넣을 결제수단을 선택하세요.</p>
+      <div class="card-search">
+        <input type="search" id="cardSearchInput" placeholder="예: 국민, 나라사랑, 토스…" value="${esc(S.cardSearch)}" autocomplete="off">
+      </div>
+      <div id="addCardList">${renderAddCardList()}</div>`;
   }
 
   return `
@@ -338,6 +343,46 @@ function fabAndPanel() {
   <aside class="add-panel ${panelOpen ? 'open' : ''}" aria-hidden="${panelOpen ? 'false' : 'true'}">
     ${panelBody}
   </aside>`;
+}
+
+function filteredAddableCards() {
+  const q = S.cardSearch.trim().toLowerCase();
+  return DB.products.filter(p => {
+    if (S.wallet.includes(p.product_id)) return false;
+    if (!q) return true;
+    const hay = `${p.product_name} ${p.provider} ${p.product_type} ${PLATE_LABEL[p.product_id] || ''}`.toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function renderAddCardList() {
+  const available = DB.products.filter(p => !S.wallet.includes(p.product_id));
+  if (!available.length) {
+    return '<p class="sub">추가할 수 있는 카드가 모두 등록되어 있어요.</p>';
+  }
+  const list = filteredAddableCards();
+  if (!list.length) {
+    return `<p class="sub">‘${esc(S.cardSearch)}’에 맞는 카드가 없어요.</p>`;
+  }
+  return list.map(p => `
+    <button type="button" class="add-card-row" data-add-card="${p.product_id}">
+      <span class="plate" style="background:${PLATE_COLORS[p.product_id]}">${PLATE_LABEL[p.product_id]}</span>
+      <span class="info">
+        <span class="nm">${esc(p.product_name)}</span>
+        <span class="tp">${esc(p.product_type)} · ${esc(p.provider)}</span>
+      </span>
+      <span class="plus-mini">+</span>
+    </button>`).join('');
+}
+
+function bindAddCardList() {
+  $$('[data-add-card]').forEach(el => el.addEventListener('click', () => {
+    const id = el.dataset.addCard;
+    S.wallet = [...new Set([...S.wallet, id])];
+    S.addPanel = null;
+    S.cardSearch = '';
+    render();
+  }));
 }
 
 /* ==================== 혜택 추천 ==================== */
@@ -700,16 +745,23 @@ function bind() {
     render();
   });
   $$('[data-open-add]').forEach(el => el.addEventListener('click', () => {
-    S.addPanel = el.dataset.openAdd;
+    const next = el.dataset.openAdd;
+    if (next === 'card') S.cardSearch = '';
+    S.addPanel = next;
     render();
   }));
   $$('[data-close-add]').forEach(el => el.addEventListener('click', () => {
     S.addPanel = null;
+    S.cardSearch = '';
     render();
   }));
 
   $$('[data-carrier]').forEach(el => el.addEventListener('click', () => {
-    S.carrier = el.dataset.carrier;
+    const next = el.dataset.carrier;
+    if (S.carrier !== next) {
+      S.carrier = next;
+      S.grade = null;
+    }
     render();
   }));
   $$('[data-grade]').forEach(el => el.addEventListener('click', () => {
@@ -718,18 +770,24 @@ function bind() {
   }));
   const saveCarrier = $('#saveCarrierBtn');
   if (saveCarrier) saveCarrier.addEventListener('click', () => {
-    if (!S.carrier) return;
-    if (!S.grade) S.grade = '일반';
+    const grades = CARRIER_GRADES[S.carrier] || [];
+    if (!S.carrier || !S.grade || !grades.includes(S.grade)) return;
     S.addPanel = null;
     render();
   });
 
-  $$('[data-add-card]').forEach(el => el.addEventListener('click', () => {
-    const id = el.dataset.addCard;
-    S.wallet = [...new Set([...S.wallet, id])];
-    S.addPanel = null;
-    render();
-  }));
+  const cardSearch = $('#cardSearchInput');
+  if (cardSearch) {
+    cardSearch.addEventListener('input', e => {
+      S.cardSearch = e.target.value;
+      const box = $('#addCardList');
+      if (box) {
+        box.innerHTML = renderAddCardList();
+        bindAddCardList();
+      }
+    });
+  }
+  bindAddCardList();
   $$('[data-remove-card]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.removeCard;
     S.wallet = S.wallet.filter(x => x !== id);
