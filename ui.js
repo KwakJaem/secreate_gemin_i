@@ -191,21 +191,30 @@ function viewMyCards() {
   const cardTiles = cards.map(ownedCardTile).join('');
 
   const carrierLabel = S.carrier === 'LGU+' ? 'LG U+' : S.carrier;
-  const carrierTile = S.carrier ? `
-    <article class="owned-tile carrier-tile">
-      <div class="owned-top">
+  const carrierBar = S.carrier ? `
+    <div class="carrier-bar">
+      <div class="carrier-bar-left">
+        <span class="carrier-bar-label">통신사</span>
         <span class="carrier-badge">${esc(carrierLabel)}</span>
+        <span class="carrier-bar-grade">${esc(S.grade || '등급 미설정')}</span>
+      </div>
+      <div class="carrier-bar-actions">
+        <button type="button" class="linkish" data-open-add="carrier">변경</button>
         <button type="button" class="icon-x" data-remove-carrier aria-label="통신사 삭제">✕</button>
       </div>
-      <div class="owned-name">통신사</div>
-      <div class="owned-meta">${esc(S.grade || '등급 미설정')}</div>
-      <button type="button" class="linkish" data-open-add="carrier">등급 변경</button>
-    </article>` : '';
+    </div>` : `
+    <div class="carrier-bar empty">
+      <div class="carrier-bar-left">
+        <span class="carrier-bar-label">통신사</span>
+        <span class="carrier-bar-empty">아직 등록되지 않았어요</span>
+      </div>
+      <button type="button" class="cta ghost sm" data-open-add="carrier">통신사 추가</button>
+    </div>`;
 
-  const empty = !cards.length && !S.carrier ? `
+  const cardsEmpty = !cards.length ? `
     <div class="owned-empty">
-      <b>아직 등록된 항목이 없어요</b>
-      <p>오른쪽 아래 <strong>+</strong> 버튼으로 카드나 통신사를 추가해 주세요.</p>
+      <b>등록된 카드가 없어요</b>
+      <p>오른쪽 아래 <strong>+</strong> 버튼에서 카드를 추가해 주세요.</p>
     </div>` : '';
 
   return `
@@ -224,13 +233,20 @@ function viewMyCards() {
     </div>
   </div>
 
-  <div class="owned-grid">
-    ${carrierTile}
-    ${cardTiles}
-    ${empty}
+  ${carrierBar}
+
+  <div class="cards-section">
+    <div class="cards-section-head">
+      <h3>내 카드</h3>
+      <span class="cards-count">${cards.length}장</span>
+    </div>
+    <div class="owned-grid">
+      ${cardTiles}
+      ${cardsEmpty}
+    </div>
   </div>
 
-  ${cards.length || S.carrier ? `
+  ${cards.length ? `
   <div class="mypage-actions">
     <button class="cta" id="goBenefits" type="button">혜택 추천 보기</button>
   </div>` : ''}
@@ -379,8 +395,7 @@ function bindAddCardList() {
   $$('[data-add-card]').forEach(el => el.addEventListener('click', () => {
     const id = el.dataset.addCard;
     S.wallet = [...new Set([...S.wallet, id])];
-    S.addPanel = null;
-    S.cardSearch = '';
+    S.addPanel = 'card'; // 패널 유지 → 여러 장 연속 추가
     render();
   }));
 }
@@ -741,12 +756,17 @@ function bind() {
 
   const fab = $('#fabAdd');
   if (fab) fab.addEventListener('click', () => {
-    S.addPanel = S.addPanel ? null : 'menu';
+    if (S.addPanel) {
+      S.addPanel = null;
+      S.cardSearch = '';
+    } else {
+      S.addPanel = 'menu';
+    }
     render();
   });
   $$('[data-open-add]').forEach(el => el.addEventListener('click', () => {
     const next = el.dataset.openAdd;
-    if (next === 'card') S.cardSearch = '';
+    if (next === 'card' && S.addPanel !== 'card') S.cardSearch = '';
     S.addPanel = next;
     render();
   }));

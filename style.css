@@ -251,11 +251,38 @@ p.sub{font-size:13px;color:var(--mut-ink);margin-bottom:12px}
 .user-chip .em{font-size:12px;color:var(--mut)}
 .cta.sm{min-width:0;padding:8px 14px;font-size:13px;margin-top:0}
 
+/* 통신사 상단 바 */
+.carrier-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:10px 14px;margin-bottom:20px;box-shadow:var(--shadow);
+}
+.carrier-bar.empty{background:var(--blue-soft);border-color:transparent}
+.carrier-bar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.carrier-bar-label{
+  font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.4px;
+  background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 8px;
+}
+.carrier-bar-grade{font-size:13.5px;font-weight:700;color:var(--ink)}
+.carrier-bar-empty{font-size:13px;color:var(--mut-ink)}
+.carrier-bar-actions{display:flex;align-items:center;gap:8px;flex:none}
+.carrier-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:48px;height:28px;padding:0 10px;border-radius:7px;
+  background:var(--blue);color:#fff;font-weight:800;font-size:12.5px;
+}
+
+.cards-section-head{
+  display:flex;align-items:baseline;gap:10px;margin-bottom:12px;
+}
+.cards-section-head h3{font-size:16px;font-weight:800}
+.cards-count{font-size:12.5px;font-weight:700;color:var(--mut);font-family:var(--mono)}
+
 .owned-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:14px;
-  min-height:180px;
+  min-height:120px;
 }
 .owned-tile{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
@@ -272,15 +299,9 @@ p.sub{font-size:13px;color:var(--mut-ink);margin-bottom:12px}
   font-size:13px;background:#fff;width:100%;
 }
 .owned-spend{margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:8px}
-.carrier-tile{background:linear-gradient(180deg,#fff 0%,var(--blue-soft) 100%)}
-.carrier-badge{
-  display:inline-flex;align-items:center;justify-content:center;
-  min-width:52px;height:34px;padding:0 10px;border-radius:8px;
-  background:var(--blue);color:#fff;font-weight:800;font-size:13px;
-}
 .linkish{
-  margin-top:auto;align-self:flex-start;border:none;background:none;
-  color:var(--blue);font-size:12.5px;font-weight:700;padding:0;text-decoration:underline;
+  border:none;background:none;color:var(--blue);font-size:12.5px;font-weight:700;
+  padding:0;text-decoration:underline;cursor:pointer;
 }
 .icon-x{
   width:28px;height:28px;border:none;border-radius:8px;background:var(--bg);
@@ -627,6 +648,7 @@ details.more[open] summary::before{transform:rotate(90deg)}
   .cta{width:100%}
   .mypage-actions .cta{width:100%}
   .user-chip{width:100%}
+  .carrier-bar{flex-wrap:wrap}
   .bubble{max-width:88%}
   .chat-wrap{height:min(65dvh,520px)}
   .fab{width:54px;height:54px}
