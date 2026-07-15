@@ -15,8 +15,8 @@
   --red-soft:#FFEDD5;
   --amber:#B45309;
   --amber-soft:#FEF3C7;
-  --sidebar-w:260px;
   --mono:'IBM Plex Mono',monospace;
+  --display:'Outfit',var(--body);
   --body:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
   --radius:14px;
   --shadow:0 4px 20px rgba(26,86,219,.08);
@@ -26,9 +26,6 @@
 html{-webkit-text-size-adjust:100%}
 body{
   font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.55;
-  background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(26,86,219,.07) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 0%, rgba(59,124,255,.05) 0%, transparent 40%);
   min-height:100dvh;
 }
 button{font-family:inherit;cursor:pointer}
@@ -36,42 +33,78 @@ input,select,textarea{font-family:inherit;font-size:15px}
 :focus-visible{outline:3px solid var(--blue-mid);outline-offset:2px;border-radius:4px}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
-/* ---- 웹 셸: 사이드바 + 본문 ---- */
-.app{
-  min-height:100dvh;
-  display:grid;
-  grid-template-columns:var(--sidebar-w) 1fr;
-}
-
-.shell{min-width:0;display:flex;flex-direction:column;min-height:100dvh}
-.shell main{
+/* ---- 앱 셸 ---- */
+.app{min-height:100dvh;display:flex;flex-direction:column}
+.app main{
   flex:1;
   width:100%;
   max-width:var(--content-max);
   margin:0 auto;
   padding:28px 36px 56px;
 }
+.app.landing-mode{background:#0B1F4A}
+.app.landing-mode main{max-width:none;padding:0;margin:0}
 
-/* ---- 사이드바 (데스크톱 고정) ---- */
-.sidebar{
-  position:sticky;top:0;height:100dvh;
-  background:var(--surface);
-  border-right:1px solid var(--line);
+/* ---- 상단 헤더 (로고 + 우측 햄버거) ---- */
+.site-header{
+  position:fixed;top:0;left:0;right:0;z-index:45;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 32px;
+  pointer-events:none;
+}
+.site-header > *{pointer-events:auto}
+.logo-btn{
+  border:none;background:transparent;font-family:var(--display);
+  font-size:20px;font-weight:800;letter-spacing:-.4px;color:var(--ink);
+}
+.logo-btn .hl{color:var(--blue)}
+.app.landing-mode .logo-btn{color:#fff}
+.app.landing-mode .logo-btn .hl{
+  color:#fff;
+  background:linear-gradient(transparent 58%, rgba(255,225,77,.85) 58% 92%, transparent 92%);
+  padding:0 2px;
+}
+.menu-btn{
+  width:46px;height:46px;border:none;border-radius:12px;
+  background:rgba(255,255,255,.92);box-shadow:0 4px 16px rgba(15,23,42,.12);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+}
+.menu-btn span{
+  display:block;width:18px;height:2px;background:var(--blue);border-radius:2px;
+  transition:transform .2s, opacity .2s;
+}
+.app.landing-mode .menu-btn{background:rgba(255,255,255,.16);backdrop-filter:blur(8px)}
+.app.landing-mode .menu-btn span{background:#fff}
+.menu-btn[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
+.menu-btn[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* ---- 우측 메뉴 패널 ---- */
+.menu-backdrop{
+  position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:55;
+  animation:fadeIn .2s ease;
+}
+.menu-backdrop[hidden]{display:none!important}
+.menu-panel{
+  position:fixed;top:0;right:0;bottom:0;width:min(320px,90vw);
+  background:var(--surface);z-index:60;
+  box-shadow:-8px 0 32px rgba(15,23,42,.14);
+  transform:translateX(105%);transition:transform .28s ease;
   display:flex;flex-direction:column;
-  z-index:60;
 }
-.sidebar-brand{
-  padding:28px 22px 20px;
-  background:linear-gradient(160deg,var(--blue) 0%,var(--blue-mid) 100%);
-  color:#fff;position:relative;
+.menu-panel.open{transform:translateX(0)}
+.menu-panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 20px 16px;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue-mid) 100%);
+  color:#fff;
 }
-.sidebar-brand h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
-.sidebar-brand h1 .hl{
-  background:rgba(255,255,255,.2);padding:0 6px;border-radius:6px;
+.menu-panel-head strong{font-size:16px;font-weight:800}
+.drawer-close{
+  width:34px;height:34px;border:none;border-radius:8px;
+  background:rgba(255,255,255,.2);color:#fff;font-size:14px;
 }
-.sidebar-brand p{font-size:12.5px;opacity:.85;margin-top:8px;line-height:1.45}
-.drawer-close{display:none}
-.drawer-nav{padding:16px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.drawer-nav{padding:14px 12px;display:flex;flex-direction:column;gap:6px;flex:1}
 .drawer-nav button{
   display:flex;align-items:center;gap:12px;width:100%;
   border:none;background:transparent;text-align:left;
@@ -91,27 +124,81 @@ input,select,textarea{font-family:inherit;font-size:15px}
   padding:14px 20px 20px;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:11.5px;color:var(--mut);
 }
-.drawer-backdrop{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-/* ---- 상단 바 ---- */
-.topbar{
-  display:flex;align-items:center;gap:14px;
-  padding:18px 36px;
-  background:rgba(255,255,255,.86);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);
-  position:sticky;top:0;z-index:40;
+/* ---- 랜딩 히어로 ---- */
+.hero{
+  position:relative;min-height:100dvh;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;text-align:center;padding:100px 28px 72px;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(59,124,255,.55) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 75%, rgba(26,86,219,.45) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(255,225,77,.12) 0%, transparent 45%),
+    linear-gradient(165deg, #071533 0%, #0E2A6B 42%, #1A56DB 100%);
 }
-.menu-btn{display:none}
-.brand{flex:1;min-width:0}
-.brand .top-title{display:none;font-size:18px;font-weight:800}
-.brand .top-title .hl{color:var(--blue)}
-.brand .tagline{font-size:14px;color:var(--mut-ink)}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:
+    linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 45%, #000 20%, transparent 75%);
+}
+.hero-orb{
+  position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none;
+  animation:float 8s ease-in-out infinite;
+}
+.hero-orb.a{
+  width:280px;height:280px;top:12%;left:-60px;
+  background:radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
+}
+.hero-orb.b{
+  width:360px;height:360px;bottom:-80px;right:-40px;
+  background:radial-gradient(circle, rgba(255,225,77,.2), transparent 68%);
+  animation-delay:-3s;
+}
+.hero-orb.c{
+  width:160px;height:160px;top:28%;right:18%;
+  background:radial-gradient(circle, rgba(120,180,255,.35), transparent 70%);
+  animation-delay:-1.5s;
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-18px)}
+}
+.hero-inner{position:relative;z-index:1;max-width:720px}
+.hero-brand{
+  font-family:var(--display);font-size:clamp(42px,7vw,72px);font-weight:800;
+  letter-spacing:-1.5px;line-height:1.1;margin-bottom:18px;
+}
+.hero-brand .hl{
+  background:linear-gradient(transparent 55%, rgba(255,225,77,.9) 55% 92%, transparent 92%);
+  padding:0 4px;
+}
+.hero-lead{
+  font-size:clamp(17px,2.4vw,22px);font-weight:600;line-height:1.55;
+  color:rgba(255,255,255,.92);margin-bottom:12px;
+}
+.hero-sub{
+  font-size:15px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:32px;
+  max-width:480px;margin-left:auto;margin-right:auto;
+}
+.hero-cta{
+  display:inline-flex;align-items:center;gap:8px;
+  border:none;border-radius:14px;padding:15px 28px;
+  background:#fff;color:var(--blue-dark);font-size:16px;font-weight:800;
+  box-shadow:0 12px 32px rgba(0,0,0,.25);
+  transition:transform .15s, box-shadow .15s;
+}
+.hero-cta:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.3)}
+.hero-cta span{font-size:18px}
 
 /* ---- 페이지 헤더 ---- */
-.page-head{margin-bottom:22px}
+.page-head{margin-bottom:22px;margin-top:56px}
 .page-head h2{font-size:26px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
 .page-head p{font-size:14px;color:var(--mut);margin-top:6px}
+.login-gate{margin-top:40px}
 
 /* ---- 섹션 카드 ---- */
 .sheet{
@@ -521,38 +608,13 @@ details.more[open] summary::before{transform:rotate(90deg)}
   .fab-wrap{right:18px;bottom:18px}
 }
 
-/* ========== 모바일: 드로어 메뉴 ========== */
+/* ========== 모바일 ========== */
 @media (max-width:760px){
-  .app{grid-template-columns:1fr}
-  .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);height:100dvh;
-    transform:translateX(-105%);transition:transform .25s ease;
-    box-shadow:8px 0 32px rgba(15,23,42,.12);
-  }
-  .sidebar.open{transform:translateX(0)}
-  .drawer-close{
-    display:flex;align-items:center;justify-content:center;
-    position:absolute;top:16px;right:14px;
-    width:32px;height:32px;border:none;background:rgba(255,255,255,.2);
-    color:#fff;border-radius:8px;font-size:14px;
-  }
-  .drawer-backdrop{
-    display:block;position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:50;
-  }
-  .drawer-backdrop[hidden]{display:none!important}
-  .menu-btn{
-    display:flex;width:40px;height:40px;border:none;background:var(--blue-soft);
-    border-radius:10px;flex-direction:column;align-items:center;justify-content:center;gap:5px;flex:none;
-  }
-  .menu-btn span{display:block;width:18px;height:2px;background:var(--blue);border-radius:2px;transition:.2s}
-  .menu-btn[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
-  .menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
-  .menu-btn[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-  .topbar{padding:12px 16px}
-  .brand .top-title{display:block}
-  .brand .tagline{display:none}
-  .shell main{padding:16px 16px 40px}
+  .site-header{padding:14px 16px}
+  .app:not(.landing-mode) main{padding:16px 16px 40px}
+  .page-head{margin-top:48px}
   .page-head h2{font-size:20px}
+  .hero{padding:96px 22px 56px}
   .subtabs{display:flex;width:100%}
   .subtabs button{flex:1;min-width:0;padding:10px}
   .cta{width:100%}

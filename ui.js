@@ -14,7 +14,7 @@ const CARRIERS = ['SKT', 'KT', 'LGU+'];
 const GRADES = ['일반', '실버', '골드', 'VIP'];
 
 const S = {
-  page: 'mypage',
+  page: 'home',
   benefitTab: 'map',
   wallet: [],
   state: { spend: {}, mywishPack: null, nori2Variant: null },
@@ -41,20 +41,18 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 document.getElementById('todayLabel').textContent =
   new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
 
-/* ---- 사이드바 / 모바일 드로어 ---- */
-function isMobileNav() {
-  return window.matchMedia('(max-width: 760px)').matches;
-}
+/* ---- 우측 메뉴 패널 ---- */
 function openDrawer() {
-  if (!isMobileNav()) return;
   const d = $('#drawer'), b = $('#drawerBackdrop'), btn = $('#menuBtn');
   d.classList.add('open');
+  d.setAttribute('aria-hidden', 'false');
   b.hidden = false;
   btn.setAttribute('aria-expanded', 'true');
 }
 function closeDrawer() {
   const d = $('#drawer'), b = $('#drawerBackdrop'), btn = $('#menuBtn');
   d.classList.remove('open');
+  d.setAttribute('aria-hidden', 'true');
   b.hidden = true;
   btn.setAttribute('aria-expanded', 'false');
 }
@@ -64,20 +62,21 @@ $('#menuBtn').addEventListener('click', () => {
 });
 $('#drawerClose').addEventListener('click', closeDrawer);
 $('#drawerBackdrop').addEventListener('click', closeDrawer);
-window.addEventListener('resize', () => {
-  if (!isMobileNav()) closeDrawer();
-});
+
+function goPage(page) {
+  S.page = page;
+  S.addPanel = null;
+  closeDrawer();
+  render();
+}
 
 $$('.drawer-nav [data-page]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    S.page = btn.dataset.page;
-    S.addPanel = null;
-    if (isMobileNav()) closeDrawer();
-    render();
-  });
+  btn.addEventListener('click', () => goPage(btn.dataset.page));
 });
+document.querySelector('.logo-btn')?.addEventListener('click', () => goPage('home'));
 
 /* ---- 데이터 로드 ---- */
+render(); // 랜딩은 DB 없이도 바로 표시
 fetch('/api/benefits')
   .then(res => res.json())
   .then(data => {
@@ -85,11 +84,10 @@ fetch('/api/benefits')
     Engine.init(DB);
     S.wallet = [];
     S.state.spend = Object.fromEntries(DB.products.map(p => [p.product_id, null]));
-    render();
+    if (S.page !== 'home') render();
   })
   .catch(err => {
     console.error('DB 로딩 실패:', err);
-    $('#main').innerHTML = `<div class="emptywallet"><b>데이터를 불러오지 못했어요</b>서버(/api/benefits) 연결을 확인해 주세요.</div>`;
   });
 
 function paymentDate() {
@@ -121,16 +119,34 @@ function spendStatus(pid) {
 
 function render() {
   $$('.drawer-nav [data-page]').forEach(b => b.classList.toggle('on', b.dataset.page === S.page));
+  document.querySelector('.app')?.classList.toggle('landing-mode', S.page === 'home');
   const m = $('#main');
-  if (!DB) {
+  if (!DB && S.page !== 'home') {
     m.innerHTML = `<div class="emptywallet"><b>불러오는 중…</b></div>`;
     return;
   }
-  if (S.page === 'mypage') m.innerHTML = viewMyPage();
+  if (S.page === 'home') m.innerHTML = viewLanding();
+  else if (S.page === 'mypage') m.innerHTML = viewMyPage();
   else if (S.page === 'benefits') m.innerHTML = viewBenefits();
   else m.innerHTML = viewMore();
   bind();
   if (!S.addPanel) window.scrollTo(0, 0);
+}
+
+/* ==================== 랜딩 ==================== */
+function viewLanding() {
+  return `
+  <section class="hero">
+    <div class="hero-orb a" aria-hidden="true"></div>
+    <div class="hero-orb b" aria-hidden="true"></div>
+    <div class="hero-orb c" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <h1 class="hero-brand">결제 <span class="hl">지시서</span></h1>
+      <p class="hero-lead">결제 직전, 지갑에서 뭘 꺼낼지 한 번에 정해 드려요.</p>
+      <p class="hero-sub">보유 카드와 혜택을 비교해 지금 당장 가장 이득인 결제 수단을 알려주는 서비스입니다.</p>
+      <button type="button" class="hero-cta" id="startHero">시작하기 <span>→</span></button>
+    </div>
+  </section>`;
 }
 
 /* ==================== 마이페이지 ==================== */
@@ -647,13 +663,16 @@ function sendChat(text) {
 
 /* ==================== 이벤트 ==================== */
 function bind() {
+  const startHero = $('#startHero');
+  if (startHero) startHero.addEventListener('click', () => goPage('mypage'));
+
   const goB = $('#goBenefits');
-  if (goB) goB.addEventListener('click', () => { S.page = 'benefits'; S.benefitTab = 'map'; render(); });
+  if (goB) goB.addEventListener('click', () => { S.benefitTab = 'map'; goPage('benefits'); });
 
   const goM = $('#goMyPage');
-  if (goM) goM.addEventListener('click', () => { S.page = 'mypage'; render(); });
+  if (goM) goM.addEventListener('click', () => goPage('mypage'));
   const goML = $('#goMyPageLink');
-  if (goML) goML.addEventListener('click', () => { S.page = 'mypage'; render(); });
+  if (goML) goML.addEventListener('click', () => goPage('mypage'));
 
   const loginBtn = $('#loginBtn');
   if (loginBtn) loginBtn.addEventListener('click', () => {
